@@ -7,9 +7,11 @@ function formatTime(iso: string): string {
 interface Props {
   task: Task
   onChangeStatus: (id: number, status: Status) => void
+  onEdit: (task: Task) => void
+  onDelete: (task: Task) => void
 }
 
-export default function TaskCard({ task, onChangeStatus }: Props) {
+export default function TaskCard({ task, onChangeStatus, onEdit, onDelete }: Props) {
   return (
     <article
       className="card"
@@ -40,6 +42,14 @@ export default function TaskCard({ task, onChangeStatus }: Props) {
           ))}
         </select>
       </label>
+      <div className="card-actions">
+        <button type="button" onClick={() => onEdit(task)}>
+          수정
+        </button>
+        <button type="button" onClick={() => onDelete(task)}>
+          삭제
+        </button>
+      </div>
     </article>
   )
 }

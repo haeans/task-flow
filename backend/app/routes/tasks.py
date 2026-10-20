@@ -1,10 +1,10 @@
 import sqlite3
 from datetime import UTC, datetime
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Response
 
 from app.db import get_db
-from app.schemas import StatusUpdate, Task, TaskCreate
+from app.schemas import StatusUpdate, Task, TaskCreate, TaskUpdate
 
 router = APIRouter(prefix="/tasks", tags=["tasks"])
 
@@ -43,3 +43,27 @@ def change_status(
         raise HTTPException(status_code=404, detail="카드를 찾을 수 없음")
     row = db.execute("SELECT * FROM tasks WHERE id = ?", (task_id,)).fetchone()
     return Task(**row)
+
+
+@router.put("/{task_id}")
+def update_task(
+    task_id: int, body: TaskUpdate, db: sqlite3.Connection = Depends(get_db)
+) -> Task:
+    cur = db.execute(
+        "UPDATE tasks SET title = ?, description = ?, updated_at = ? WHERE id = ?",
+        (body.title, body.description, _now(), task_id),
+    )
+    db.commit()
+    if cur.rowcount == 0:
+        raise HTTPException(status_code=404, detail="카드를 찾을 수 없음")
+    row = db.execute("SELECT * FROM tasks WHERE id = ?", (task_id,)).fetchone()
+    return Task(**row)
+
+
+@router.delete("/{task_id}", status_code=204)
+def delete_task(task_id: int, db: sqlite3.Connection = Depends(get_db)) -> Response:
+    cur = db.execute("DELETE FROM tasks WHERE id = ?", (task_id,))
+    db.commit()
+    if cur.rowcount == 0:
+        raise HTTPException(status_code=404, detail="카드를 찾을 수 없음")
+    return Response(status_code=204)

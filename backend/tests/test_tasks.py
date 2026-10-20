@@ -116,3 +116,56 @@ def test_status_persists_across_restart(db_file):
         c.patch(f"/tasks/{task['id']}/status", json={"status": "DONE"})
     with TestClient(app) as c:
         assert c.get("/tasks").json()[0]["status"] == "DONE"
+
+
+def test_update_changes_title_description_and_updated_at_only(client):
+    task = _make(client)
+    client.patch(f"/tasks/{task['id']}/status", json={"status": "DONE"})
+    res = client.put(f"/tasks/{task['id']}", json={"title": " 새 제목 ", "description": "새 설명"})
+    assert res.status_code == 200
+    body = res.json()
+    assert body["title"] == "새 제목"
+    assert body["description"] == "새 설명"
+    assert body["status"] == "DONE"
+    assert body["created_at"] == task["created_at"]
+    assert body["updated_at"] > task["updated_at"]
+
+
+def test_update_rejects_blank_title_and_keeps_card(client):
+    task = _make(client, "원래")
+    for title in ["", "   "]:
+        assert client.put(f"/tasks/{task['id']}", json={"title": title}).status_code == 422
+    assert client.get("/tasks").json()[0]["title"] == "원래"
+
+
+def test_update_length_limits(client):
+    task = _make(client)
+    url = f"/tasks/{task['id']}"
+    assert client.put(url, json={"title": "가" * 101}).status_code == 422
+    assert client.put(url, json={"title": "a", "description": "나" * 1001}).status_code == 422
+
+
+def test_update_ignores_status_in_body(client):
+    task = _make(client)
+    res = client.put(f"/tasks/{task['id']}", json={"title": "a", "status": "DONE"})
+    assert res.json()["status"] == "TODO"
+
+
+def test_update_missing_card_is_404(client):
+    assert client.put("/tasks/999", json={"title": "a"}).status_code == 404
+
+
+def test_delete_removes_card_and_persists(db_file):
+    with TestClient(app) as c:
+        a, b = _make(c, "a"), _make(c, "b")
+        assert c.delete(f"/tasks/{a['id']}").status_code == 204
+        assert [t["id"] for t in c.get("/tasks").json()] == [b["id"]]
+    with TestClient(app) as c:
+        assert [t["id"] for t in c.get("/tasks").json()] == [b["id"]]
+
+
+def test_delete_missing_card_is_404(client):
+    assert client.delete("/tasks/999").status_code == 404
+    task = _make(client)
+    assert client.delete(f"/tasks/{task['id']}").status_code == 204
+    assert client.delete(f"/tasks/{task['id']}").status_code == 404

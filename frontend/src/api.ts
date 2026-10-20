@@ -12,6 +12,7 @@ export class ApiError extends Error {
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`/api${path}`, init)
   if (!res.ok) throw new ApiError(res.status)
+  if (res.status === 204) return undefined as T
   return res.json() as Promise<T>
 }
 
@@ -25,6 +26,18 @@ export function createTask(title: string, description: string): Promise<Task> {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ title, description }),
   })
+}
+
+export function updateTask(id: number, title: string, description: string): Promise<Task> {
+  return request<Task>(`/tasks/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ title, description }),
+  })
+}
+
+export function deleteTask(id: number): Promise<void> {
+  return request<void>(`/tasks/${id}`, { method: 'DELETE' })
 }
 
 // 버튼·선택 메뉴와 드래그가 같은 요청을 쓴다 (D-004).

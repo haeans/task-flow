@@ -1,19 +1,22 @@
 import { useEffect, useRef, useState } from 'react'
-import { createTask } from '../api'
+import { ApiError, createTask, updateTask } from '../api'
 import type { Task } from '../types'
 import { DESCRIPTION_MAX, TITLE_MAX } from '../types'
 import { validateTaskInput } from '../validate'
 
 interface Props {
+  // 있으면 수정, 없으면 새로 등록한다.
+  task?: Task
   onClose: () => void
-  onCreated: (task: Task) => void
+  onSaved: (task: Task) => void
+  onNotFound: () => void
 }
 
-// 새 Task는 별도 입력 창에서 입력한다 (D-012).
-export default function TaskDialog({ onClose, onCreated }: Props) {
+// 새 Task는 별도 입력 창에서 입력한다 (D-012). 수정도 같은 창을 쓴다.
+export default function TaskDialog({ task, onClose, onSaved, onNotFound }: Props) {
   const ref = useRef<HTMLDialogElement>(null)
-  const [title, setTitle] = useState('')
-  const [description, setDescription] = useState('')
+  const [title, setTitle] = useState(task?.title ?? '')
+  const [description, setDescription] = useState(task?.description ?? '')
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
 
@@ -31,10 +34,20 @@ export default function TaskDialog({ onClose, onCreated }: Props) {
     setSaving(true)
     setError(null)
     try {
-      const task = await createTask(title.trim(), description)
-      onCreated(task)
-    } catch {
-      setError('저장하지 못했습니다. 카드는 만들어지지 않았습니다.')
+      const saved = task
+        ? await updateTask(task.id, title.trim(), description)
+        : await createTask(title.trim(), description)
+      onSaved(saved)
+    } catch (e) {
+      if (e instanceof ApiError && e.status === 404) {
+        onNotFound()
+        return
+      }
+      setError(
+        task
+          ? '저장하지 못했습니다. 카드는 바뀌지 않았습니다.'
+          : '저장하지 못했습니다. 카드는 만들어지지 않았습니다.',
+      )
       setSaving(false)
     }
   }
@@ -42,7 +55,7 @@ export default function TaskDialog({ onClose, onCreated }: Props) {
   return (
     <dialog ref={ref} onClose={onClose} className="dialog">
       <form onSubmit={submit}>
-        <h2>새 Task</h2>
+        <h2>{task ? 'Task 수정' : '새 Task'}</h2>
         <label>
           제목
           <input value={title} onChange={(e) => setTitle(e.target.value)} autoFocus />
@@ -71,7 +84,7 @@ export default function TaskDialog({ onClose, onCreated }: Props) {
             취소
           </button>
           <button type="submit" disabled={saving}>
-            {saving ? '저장 중...' : '등록'}
+            {saving ? '저장 중...' : task ? '저장' : '등록'}
           </button>
         </div>
       </form>

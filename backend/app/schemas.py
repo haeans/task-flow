@@ -41,3 +41,7 @@ class Task(BaseModel):
 
 class StatusUpdate(BaseModel):
     status: Status
+
+
+class TaskUpdate(TaskCreate):
+    """수정은 제목과 설명만 받는다. 상태는 받지 않는다."""

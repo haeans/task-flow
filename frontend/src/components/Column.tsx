@@ -7,9 +7,18 @@ interface Props {
   label: string
   tasks: Task[]
   onChangeStatus: (id: number, status: Status) => void
+  onEdit: (task: Task) => void
+  onDelete: (task: Task) => void
 }
 
-export default function Column({ status, label, tasks, onChangeStatus }: Props) {
+export default function Column({
+  status,
+  label,
+  tasks,
+  onChangeStatus,
+  onEdit,
+  onDelete,
+}: Props) {
   const [over, setOver] = useState(false)
 
   return (
@@ -39,7 +48,13 @@ export default function Column({ status, label, tasks, onChangeStatus }: Props) 
       </h2>
       <div className="cards">
         {tasks.map((task) => (
-          <TaskCard key={task.id} task={task} onChangeStatus={onChangeStatus} />
+          <TaskCard
+            key={task.id}
+            task={task}
+            onChangeStatus={onChangeStatus}
+            onEdit={onEdit}
+            onDelete={onDelete}
+          />
         ))}
       </div>
     </section>
