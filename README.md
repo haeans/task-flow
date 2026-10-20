@@ -1,7 +1,7 @@
 # task-flow
 
 상태 카드형 Task 관리 웹 앱. 설계는 PRD.md, ARCHITECTURE.md, DECISIONS.md를 따른다.
-현재는 기본 구조(M0)만 있고 Task 기능, 데이터베이스, 로그인은 없다.
+카드 등록·상태 변경·수정·삭제를 지원한다. 로그인은 없다.
 
 ## 구조
 
@@ -23,4 +23,11 @@ npm install
 npm run dev
 ```
 
-프론트엔드는 `/api` 요청을 백엔드(8000)로 넘긴다. 화면에 "API 연결됨"이 보이면 정상이다.
+프론트엔드는 `/api` 요청을 백엔드(8000)로 넘긴다. 데이터는 `backend/data/tasks.db`에 저장된다(Git 제외).
+
+## 테스트
+
+```powershell
+cd backend
+uv run pytest
+```
