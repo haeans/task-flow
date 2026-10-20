@@ -37,3 +37,7 @@ class Task(BaseModel):
     status: Status
     created_at: str
     updated_at: str
+
+
+class StatusUpdate(BaseModel):
+    status: Status

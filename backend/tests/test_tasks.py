@@ -67,3 +67,52 @@ def test_unreadable_storage_returns_error(db_file):
     with TestClient(app, raise_server_exceptions=False) as c:
         res = c.get("/tasks")
     assert res.status_code == 500
+
+
+def _make(client, title="카드"):
+    return client.post("/tasks", json={"title": title}).json()
+
+
+def test_status_change_any_direction(client):
+    task = _make(client)
+    for status in ["IN_PROGRESS", "DONE", "TODO", "DONE", "IN_PROGRESS"]:
+        res = client.patch(f"/tasks/{task['id']}/status", json={"status": status})
+        assert res.status_code == 200
+        assert res.json()["status"] == status
+    assert client.get("/tasks").json()[0]["status"] == "IN_PROGRESS"
+
+
+def test_status_change_keeps_other_fields_and_updated_at(client):
+    task = _make(client)
+    body = client.patch(f"/tasks/{task['id']}/status", json={"status": "DONE"}).json()
+    assert body["title"] == task["title"]
+    assert body["created_at"] == task["created_at"]
+    assert body["updated_at"] == task["updated_at"]
+
+
+def test_status_change_does_not_touch_other_cards(client):
+    a, b = _make(client, "a"), _make(client, "b")
+    client.patch(f"/tasks/{a['id']}/status", json={"status": "DONE"})
+    by_id = {t["id"]: t["status"] for t in client.get("/tasks").json()}
+    assert by_id == {a["id"]: "DONE", b["id"]: "TODO"}
+
+
+def test_status_change_rejects_invalid_value(client):
+    task = _make(client)
+    for bad in ["done", "BLOCKED", "", None]:
+        res = client.patch(f"/tasks/{task['id']}/status", json={"status": bad})
+        assert res.status_code == 422
+    assert client.get("/tasks").json()[0]["status"] == "TODO"
+
+
+def test_status_change_missing_card_is_404(client):
+    res = client.patch("/tasks/999/status", json={"status": "DONE"})
+    assert res.status_code == 404
+
+
+def test_status_persists_across_restart(db_file):
+    with TestClient(app) as c:
+        task = _make(c)
+        c.patch(f"/tasks/{task['id']}/status", json={"status": "DONE"})
+    with TestClient(app) as c:
+        assert c.get("/tasks").json()[0]["status"] == "DONE"

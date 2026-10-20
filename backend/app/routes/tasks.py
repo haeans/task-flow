@@ -1,10 +1,10 @@
 import sqlite3
 from datetime import UTC, datetime
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 
 from app.db import get_db
-from app.schemas import Task, TaskCreate
+from app.schemas import StatusUpdate, Task, TaskCreate
 
 router = APIRouter(prefix="/tasks", tags=["tasks"])
 
@@ -29,4 +29,17 @@ def create_task(body: TaskCreate, db: sqlite3.Connection = Depends(get_db)) -> T
     )
     db.commit()
     row = db.execute("SELECT * FROM tasks WHERE id = ?", (cur.lastrowid,)).fetchone()
+    return Task(**row)
+
+
+@router.patch("/{task_id}/status")
+def change_status(
+    task_id: int, body: StatusUpdate, db: sqlite3.Connection = Depends(get_db)
+) -> Task:
+    # 상태만 바꾼다. updated_at은 제목·설명 수정에서만 갱신한다.
+    cur = db.execute("UPDATE tasks SET status = ? WHERE id = ?", (body.status, task_id))
+    db.commit()
+    if cur.rowcount == 0:
+        raise HTTPException(status_code=404, detail="카드를 찾을 수 없음")
+    row = db.execute("SELECT * FROM tasks WHERE id = ?", (task_id,)).fetchone()
     return Task(**row)
