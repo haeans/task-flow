@@ -169,3 +169,19 @@ def test_delete_missing_card_is_404(client):
     task = _make(client)
     assert client.delete(f"/tasks/{task['id']}").status_code == 204
     assert client.delete(f"/tasks/{task['id']}").status_code == 404
+
+
+def test_create_on_unreadable_storage_fails_without_success(db_file):
+    db_file.write_bytes(b"this is not a sqlite database" * 50)
+    with TestClient(app, raise_server_exceptions=False) as c:
+        res = c.post("/tasks", json={"title": "저장되면 안 됨"})
+    assert res.status_code == 500
+
+
+def test_recovers_after_storage_is_fixed_without_restart(db_file):
+    db_file.write_bytes(b"this is not a sqlite database" * 50)
+    with TestClient(app, raise_server_exceptions=False) as c:
+        assert c.get("/tasks").status_code == 500
+        db_file.unlink()  # 원인이 풀린다 (테스트용 임시 폴더의 파일)
+        assert c.get("/tasks").json() == []
+        assert c.post("/tasks", json={"title": "복구 뒤 등록"}).status_code == 201

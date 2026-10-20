@@ -23,22 +23,26 @@ def db_path() -> Path:
 
 
 def connect() -> sqlite3.Connection:
+    # 연결할 때마다 테이블을 보장한다. 시작 때 파일이 손상돼 있었어도,
+    # 원인이 풀리면 재시작 없이 정상으로 돌아온다 (R-009).
+    db_path().parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(db_path())
-    conn.row_factory = sqlite3.Row
+    try:
+        conn.row_factory = sqlite3.Row
+        conn.execute(SCHEMA)
+        conn.commit()
+    except sqlite3.Error:
+        conn.close()
+        raise
     return conn
 
 
 def init_db() -> None:
-    db_path().parent.mkdir(parents=True, exist_ok=True)
-    conn = connect()
     try:
-        conn.execute(SCHEMA)
-        conn.commit()
-    except sqlite3.Error:
+        connect().close()
+    except (sqlite3.Error, OSError):
         # 파일을 읽을 수 없어도 앱은 뜬다. 요청이 오면 오류로 응답한다 (AQ-002).
         pass
-    finally:
-        conn.close()
 
 
 def get_db() -> Iterator[sqlite3.Connection]:

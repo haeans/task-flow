@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useState } from 'react'
 import { ApiError, changeStatus, deleteTask, listTasks } from './api'
 import Board from './components/Board'
+import Notice from './components/Notice'
+import { EmptyScreen, FailedScreen, LoadingScreen } from './components/StatusScreen'
 import TaskDialog from './components/TaskDialog'
+import { loadErrorMessage } from './errors'
 import type { Status, Task } from './types'
 
 type Load = 'loading' | 'ready' | 'failed'
@@ -14,6 +17,7 @@ function App() {
   // 'new'는 등록 창, Task는 그 카드의 수정 창, null은 닫힘.
   const [dialog, setDialog] = useState<Task | 'new' | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
+  const [loadError, setLoadError] = useState('')
 
   const fetchTasks = useCallback(() => {
     listTasks()
@@ -21,7 +25,10 @@ function App() {
         setTasks(list)
         setLoad('ready')
       })
-      .catch(() => setLoad('failed'))
+      .catch((e) => {
+        setLoadError(loadErrorMessage(e))
+        setLoad('failed')
+      })
   }, [])
 
   const retry = () => {
@@ -87,24 +94,19 @@ function App() {
           새 Task
         </button>
       </header>
-      {load === 'loading' && <p>불러오는 중...</p>}
-      {load === 'failed' && (
-        <p role="alert" className="error">
-          카드를 불러오지 못했습니다. <button onClick={retry}>다시 시도</button>
-        </p>
-      )}
-      {notice && (
-        <p role="alert" className="error">
-          {notice}
-        </p>
-      )}
+      {notice && <Notice message={notice} onDismiss={() => setNotice(null)} />}
+      {load === 'loading' && <LoadingScreen />}
+      {load === 'failed' && <FailedScreen message={loadError} onRetry={retry} />}
       {load === 'ready' && (
-        <Board
-          tasks={tasks}
-          onChangeStatus={handleChangeStatus}
-          onEdit={setDialog}
-          onDelete={handleDelete}
-        />
+        <>
+          {tasks.length === 0 && <EmptyScreen onCreate={() => setDialog('new')} />}
+          <Board
+            tasks={tasks}
+            onChangeStatus={handleChangeStatus}
+            onEdit={setDialog}
+            onDelete={handleDelete}
+          />
+        </>
       )}
       {dialog && (
         <TaskDialog

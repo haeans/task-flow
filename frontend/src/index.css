@@ -232,3 +232,46 @@ button:disabled {
   padding: 2px 10px;
   font-size: 13px;
 }
+
+.screen {
+  text-align: center;
+  padding: 24px 16px;
+  margin-bottom: 16px;
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.screen p {
+  margin: 4px 0;
+}
+
+.screen .screen-title {
+  color: var(--text-h);
+  font-weight: 600;
+}
+
+.screen button {
+  margin-top: 10px;
+}
+
+.screen-failed {
+  border-style: solid;
+  border-color: var(--danger);
+}
+
+.screen-failed .screen-title {
+  color: var(--danger);
+}
+
+.notice {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  border: 1px solid var(--danger);
+  border-radius: 6px;
+  color: var(--danger);
+}
