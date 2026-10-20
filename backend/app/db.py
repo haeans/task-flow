@@ -3,7 +3,7 @@ import sqlite3
 from collections.abc import Iterator
 from pathlib import Path
 
-# 임시 위치 (AQ-003 미정). 환경 변수 TASK_FLOW_DB로 바꿀 수 있다.
+# 저장소 파일 위치 (AQ-003 확정). 테스트에서는 환경 변수 TASK_FLOW_DB로 바꾼다.
 DEFAULT_DB_PATH = Path(__file__).resolve().parent.parent / "data" / "tasks.db"
 
 SCHEMA = """
