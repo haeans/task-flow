@@ -1,4 +1,4 @@
-import type { Status, Task } from './types'
+import type { Status, Task, User } from './types'
 
 export class ApiError extends Error {
   status: number
@@ -47,4 +47,26 @@ export function changeStatus(id: number, status: Status): Promise<Task> {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ status }),
   })
+}
+
+// 가입 뒤 자동으로 로그인하지 않는다. 로그인은 따로 한다 (D-026).
+export function signup(username: string, password: string): Promise<User> {
+  return request<User>('/users', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, password }),
+  })
+}
+
+// 로그인 상태는 서버가 내려 주는 쿠키(HttpOnly)가 들고 있다. 화면은 값을 다루지 않는다.
+export function login(username: string, password: string): Promise<User> {
+  return request<User>('/sessions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, password }),
+  })
+}
+
+export function logout(): Promise<void> {
+  return request<void>('/sessions', { method: 'DELETE' })
 }

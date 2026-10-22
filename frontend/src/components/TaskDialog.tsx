@@ -10,10 +10,12 @@ interface Props {
   onClose: () => void
   onSaved: (task: Task) => void
   onNotFound: () => void
+  // 로그인이 끝났을 때 (R-010)
+  onUnauthorized: () => void
 }
 
 // 새 Task는 별도 입력 창에서 입력한다 (D-012). 수정도 같은 창을 쓴다.
-export default function TaskDialog({ task, onClose, onSaved, onNotFound }: Props) {
+export default function TaskDialog({ task, onClose, onSaved, onNotFound, onUnauthorized }: Props) {
   const ref = useRef<HTMLDialogElement>(null)
   const [title, setTitle] = useState(task?.title ?? '')
   const [description, setDescription] = useState(task?.description ?? '')
@@ -39,6 +41,10 @@ export default function TaskDialog({ task, onClose, onSaved, onNotFound }: Props
         : await createTask(title.trim(), description)
       onSaved(saved)
     } catch (e) {
+      if (e instanceof ApiError && e.status === 401) {
+        onUnauthorized()
+        return
+      }
       if (e instanceof ApiError && e.status === 404) {
         onNotFound()
         return
