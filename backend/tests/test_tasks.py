@@ -1,6 +1,7 @@
 from fastapi.testclient import TestClient
 
 from app.main import app
+from tests.conftest import upgrade_db
 
 
 def test_list_empty(client):
@@ -183,5 +184,6 @@ def test_recovers_after_storage_is_fixed_without_restart(db_file):
     with TestClient(app, raise_server_exceptions=False) as c:
         assert c.get("/tasks").status_code == 500
         db_file.unlink()  # 원인이 풀린다 (테스트용 임시 폴더의 파일)
+        upgrade_db()  # 스키마는 alembic이 만든다. 서버 재시작은 필요 없다.
         assert c.get("/tasks").json() == []
         assert c.post("/tasks", json={"title": "복구 뒤 등록"}).status_code == 201
