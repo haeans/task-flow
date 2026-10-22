@@ -1,8 +1,30 @@
 from typing import Literal
 
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, Field, field_validator
 
 Status = Literal["TODO", "IN_PROGRESS", "DONE"]
+
+# 아이디는 4~20자 영문·숫자, 비밀번호는 8~100자 (Q-014)
+USERNAME_PATTERN = r"^[A-Za-z0-9]{4,20}$"
+PASSWORD_MIN = 8
+PASSWORD_MAX = 100
+
+
+class SignupRequest(BaseModel):
+    username: str = Field(pattern=USERNAME_PATTERN)
+    password: str = Field(min_length=PASSWORD_MIN, max_length=PASSWORD_MAX)
+
+
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+
+
+class UserOut(BaseModel):
+    """사용자에 대해 응답으로 돌려주는 값은 구분 값과 아이디뿐이다. 해시값은 담지 않는다."""
+
+    id: int
+    username: str
 
 TITLE_MAX = 100
 DESCRIPTION_MAX = 1000
