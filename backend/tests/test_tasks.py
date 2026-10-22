@@ -1,7 +1,22 @@
+import pytest
 from fastapi.testclient import TestClient
 
 from app.main import app
-from tests.conftest import upgrade_db
+from tests.conftest import sign_in, upgrade_db
+
+
+@pytest.fixture
+def client(auth_client):
+    """이 파일의 카드 규칙 테스트는 모두 로그인한 사용자로 한다."""
+    return auth_client
+
+
+def _restart(c):
+    """서버를 다시 켠 것처럼 새 클라이언트를 만들고, 같은 로그인 쿠키를 보낸다 (DB의 세션은 그대로)."""
+    cookie = c.cookies.get("session")
+    new = TestClient(app)
+    new.cookies.set("session", cookie)
+    return new
 
 
 def test_list_empty(client):
@@ -58,14 +73,16 @@ def test_list_newest_first(client):
 
 def test_data_survives_restart(db_file):
     with TestClient(app) as c:
+        sign_in(c)
         c.post("/tasks", json={"title": "남아야 함"})
-    with TestClient(app) as c:
-        assert [t["title"] for t in c.get("/tasks").json()] == ["남아야 함"]
+        with _restart(c) as c2:
+            assert [t["title"] for t in c2.get("/tasks").json()] == ["남아야 함"]
 
 
 def test_unreadable_storage_returns_error(db_file):
-    db_file.write_bytes(b"this is not a sqlite database" * 50)
     with TestClient(app, raise_server_exceptions=False) as c:
+        sign_in(c)
+        db_file.write_bytes(b"this is not a sqlite database" * 50)
         res = c.get("/tasks")
     assert res.status_code == 500
 
@@ -113,10 +130,11 @@ def test_status_change_missing_card_is_404(client):
 
 def test_status_persists_across_restart(db_file):
     with TestClient(app) as c:
+        sign_in(c)
         task = _make(c)
         c.patch(f"/tasks/{task['id']}/status", json={"status": "DONE"})
-    with TestClient(app) as c:
-        assert c.get("/tasks").json()[0]["status"] == "DONE"
+        with _restart(c) as c2:
+            assert c2.get("/tasks").json()[0]["status"] == "DONE"
 
 
 def test_update_changes_title_description_and_updated_at_only(client):
@@ -158,11 +176,12 @@ def test_update_missing_card_is_404(client):
 
 def test_delete_removes_card_and_persists(db_file):
     with TestClient(app) as c:
+        sign_in(c)
         a, b = _make(c, "a"), _make(c, "b")
         assert c.delete(f"/tasks/{a['id']}").status_code == 204
         assert [t["id"] for t in c.get("/tasks").json()] == [b["id"]]
-    with TestClient(app) as c:
-        assert [t["id"] for t in c.get("/tasks").json()] == [b["id"]]
+        with _restart(c) as c2:
+            assert [t["id"] for t in c2.get("/tasks").json()] == [b["id"]]
 
 
 def test_delete_missing_card_is_404(client):
@@ -173,17 +192,22 @@ def test_delete_missing_card_is_404(client):
 
 
 def test_create_on_unreadable_storage_fails_without_success(db_file):
-    db_file.write_bytes(b"this is not a sqlite database" * 50)
     with TestClient(app, raise_server_exceptions=False) as c:
+        sign_in(c)
+        db_file.write_bytes(b"this is not a sqlite database" * 50)
         res = c.post("/tasks", json={"title": "저장되면 안 됨"})
     assert res.status_code == 500
 
 
 def test_recovers_after_storage_is_fixed_without_restart(db_file):
-    db_file.write_bytes(b"this is not a sqlite database" * 50)
     with TestClient(app, raise_server_exceptions=False) as c:
+        sign_in(c)
+        db_file.write_bytes(b"this is not a sqlite database" * 50)
         assert c.get("/tasks").status_code == 500
         db_file.unlink()  # 원인이 풀린다 (테스트용 임시 폴더의 파일)
         upgrade_db()  # 스키마는 alembic이 만든다. 서버 재시작은 필요 없다.
+        # 새 저장소에는 예전 로그인 정보가 없으므로 다시 가입·로그인해야 한다.
+        assert c.get("/tasks").status_code == 401
+        sign_in(c)
         assert c.get("/tasks").json() == []
         assert c.post("/tasks", json={"title": "복구 뒤 등록"}).status_code == 201
