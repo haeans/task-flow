@@ -275,3 +275,47 @@ button:disabled {
   border-radius: 6px;
   color: var(--danger);
 }
+
+.auth {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: min(360px, 100%);
+  margin: 24px auto;
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.auth label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.auth input {
+  font: inherit;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text-h);
+}
+
+.auth p {
+  margin: 0;
+}
+
+.auth .hint {
+  align-self: flex-start;
+}
+
+.info {
+  color: var(--text-h);
+}
+
+.top-actions {
+  display: flex;
+  gap: 8px;
+}
