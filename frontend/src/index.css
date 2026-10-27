@@ -130,6 +130,41 @@ button:disabled {
   overflow-wrap: anywhere;
 }
 
+.card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  font-size: 12px;
+}
+
+.badge {
+  padding: 1px 8px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+}
+
+.badge.priority-high {
+  color: var(--text-h);
+  border-color: var(--accent);
+}
+
+.badge.overdue {
+  color: var(--danger);
+  border-color: var(--danger);
+  font-weight: 600;
+}
+
+.due {
+  color: var(--text-h);
+}
+
+.date-row {
+  display: flex;
+  gap: 8px;
+}
+
 .card-times {
   display: grid;
   grid-template-columns: auto 1fr;

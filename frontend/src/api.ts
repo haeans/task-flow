@@ -1,4 +1,4 @@
-import type { Status, Task, User } from './types'
+import type { Status, Task, TaskInput, User } from './types'
 
 export class ApiError extends Error {
   status: number
@@ -20,19 +20,20 @@ export function listTasks(): Promise<Task[]> {
   return request<Task[]>('/tasks')
 }
 
-export function createTask(title: string, description: string): Promise<Task> {
+export function createTask(input: TaskInput): Promise<Task> {
   return request<Task>('/tasks', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ title, description }),
+    body: JSON.stringify(input),
   })
 }
 
-export function updateTask(id: number, title: string, description: string): Promise<Task> {
+// due_date가 null이면 마감일을 지운다 (R-012).
+export function updateTask(id: number, input: TaskInput): Promise<Task> {
   return request<Task>(`/tasks/${id}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ title, description }),
+    body: JSON.stringify(input),
   })
 }
 

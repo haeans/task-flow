@@ -7,14 +7,27 @@ import {
 } from './types'
 
 // API와 같은 기준 (D-003, D-013, Q-007). 최종 판단은 API가 한다.
-export function validateTaskInput(title: string, description: string): string | null {
+export function validateTaskInput(
+  title: string,
+  description: string,
+  dueDate: string,
+): string | null {
   const t = title.trim()
   if (!t) return '제목을 입력하세요.'
   if (t.length > TITLE_MAX) return `제목은 ${TITLE_MAX}자 이하여야 합니다.`
   if (description.length > DESCRIPTION_MAX) {
     return `설명은 ${DESCRIPTION_MAX}자 이하여야 합니다.`
   }
+  if (dueDate && !isValidDate(dueDate)) return '마감일은 YYYY-MM-DD 날짜여야 합니다.'
   return null
+}
+
+// 마감일 검사 (R-012). 빈 값은 "마감일 없음"이라 호출하는 쪽에서 거른다. 최종 판단은 API가 한다.
+function isValidDate(s: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return false
+  const [y, m, d] = s.split('-').map(Number)
+  const date = new Date(Date.UTC(y, m - 1, d))
+  return date.getUTCFullYear() === y && date.getUTCMonth() === m - 1 && date.getUTCDate() === d
 }
 
 // 가입 입력 검사. API와 같은 기준이며 최종 판단은 API가 한다 (Q-014).
