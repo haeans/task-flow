@@ -64,11 +64,12 @@ def test_create_ignores_client_supplied_status_and_times(client):
     assert body["created_at"] != "2000-01-01T00:00:00Z"
 
 
-def test_list_newest_first(client):
+def test_list_same_priority_and_no_due_date_is_id_ascending(client):
+    # 최신순(D-017)은 정렬 규칙(R-014)으로 대체되었다. 앞 기준이 모두 같으면 ID 오름차순이다.
     client.post("/tasks", json={"title": "먼저"})
     client.post("/tasks", json={"title": "나중"})
     titles = [t["title"] for t in client.get("/tasks").json()]
-    assert titles == ["나중", "먼저"]
+    assert titles == ["먼저", "나중"]
 
 
 def test_data_survives_restart(db_file):

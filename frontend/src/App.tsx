@@ -80,6 +80,16 @@ function App() {
     setLoad('loggedOut')
   }
 
+  // 순서는 서버가 정한다 (R-014). 변경은 이미 화면에 반영했으므로, 순서를 맞추려는 재조회가
+  // 실패해도 화면은 그대로 둔다. 로그인이 끝난 경우(401)만 로그인 화면으로 보낸다.
+  function syncOrder() {
+    listTasks()
+      .then(setTasks)
+      .catch((e) => {
+        if (e instanceof ApiError && e.status === 401) handleUnauthorized()
+      })
+  }
+
   function handleNotFound() {
     setDialog(null)
     setNotice(NOT_FOUND_NOTICE)
@@ -92,6 +102,7 @@ function App() {
     try {
       const updated = await changeStatus(id, status)
       setTasks((prev) => prev.map((t) => (t.id === id ? updated : t)))
+      syncOrder() // 완료로 옮기면 기한 초과가 풀려 순서가 바뀐다.
     } catch (e) {
       if (e instanceof ApiError && e.status === 401) {
         handleUnauthorized()
@@ -130,6 +141,7 @@ function App() {
         : [saved, ...prev],
     )
     setDialog(null)
+    syncOrder()
   }
 
   return (

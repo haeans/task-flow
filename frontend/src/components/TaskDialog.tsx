@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { ApiError, createTask, updateTask } from '../api'
-import type { Task } from '../types'
-import { DESCRIPTION_MAX, TITLE_MAX } from '../types'
+import type { Priority, Task } from '../types'
+import { DESCRIPTION_MAX, PRIORITIES, TITLE_MAX } from '../types'
 import { validateTaskInput } from '../validate'
 
 interface Props {
@@ -19,6 +19,8 @@ export default function TaskDialog({ task, onClose, onSaved, onNotFound, onUnaut
   const ref = useRef<HTMLDialogElement>(null)
   const [title, setTitle] = useState(task?.title ?? '')
   const [description, setDescription] = useState(task?.description ?? '')
+  const [priority, setPriority] = useState<Priority>(task?.priority ?? 'NORMAL')
+  const [dueDate, setDueDate] = useState(task?.due_date ?? '')
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
 
@@ -28,7 +30,7 @@ export default function TaskDialog({ task, onClose, onSaved, onNotFound, onUnaut
 
   async function submit(e: React.FormEvent) {
     e.preventDefault()
-    const invalid = validateTaskInput(title, description)
+    const invalid = validateTaskInput(title, description, dueDate)
     if (invalid) {
       setError(invalid)
       return
@@ -36,9 +38,9 @@ export default function TaskDialog({ task, onClose, onSaved, onNotFound, onUnaut
     setSaving(true)
     setError(null)
     try {
-      const saved = task
-        ? await updateTask(task.id, title.trim(), description)
-        : await createTask(title.trim(), description)
+      // 마감일을 비우면 null을 보내 지운다.
+      const input = { title: title.trim(), description, priority, due_date: dueDate || null }
+      const saved = task ? await updateTask(task.id, input) : await createTask(input)
       onSaved(saved)
     } catch (e) {
       if (e instanceof ApiError && e.status === 401) {
@@ -78,6 +80,25 @@ export default function TaskDialog({ task, onClose, onSaved, onNotFound, onUnaut
           />
           <span className="hint">
             {description.length}/{DESCRIPTION_MAX}
+          </span>
+        </label>
+        <label>
+          우선순위
+          <select value={priority} onChange={(e) => setPriority(e.target.value as Priority)}>
+            {PRIORITIES.map(({ value, label }) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          마감일 (선택)
+          <span className="date-row">
+            <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+            <button type="button" onClick={() => setDueDate('')} disabled={!dueDate}>
+              지우기
+            </button>
           </span>
         </label>
         {error && (

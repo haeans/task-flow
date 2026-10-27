@@ -1,5 +1,5 @@
 import sqlite3
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Response
 
@@ -13,6 +13,36 @@ router = APIRouter(prefix="/tasks", tags=["tasks"])
 
 def _now() -> str:
     return datetime.now(UTC).isoformat(timespec="milliseconds")
+
+
+def _today() -> str:
+    # "오늘"은 서버 PC의 로컬 날짜이다 (Q-018). 테스트에서 이 함수를 바꿔 날짜를 고정한다.
+    return date.today().isoformat()
+
+
+def _to_task(row: sqlite3.Row, today: str) -> Task:
+    # 기한 초과: 마감일이 오늘보다 이전이고 완료가 아닐 때. 당일은 아니다 (R-013).
+    # YYYY-MM-DD 문자열은 사전순 비교가 날짜순이다.
+    overdue = row["due_date"] is not None and row["due_date"] < today and row["status"] != "DONE"
+    return Task(**dict(row), overdue=overdue)
+
+
+def _fetch_task(db: sqlite3.Connection, task_id: int) -> Task:
+    row = db.execute("SELECT * FROM tasks WHERE id = ?", (task_id,)).fetchone()
+    return _to_task(row, _today())
+
+
+# 정렬 (R-014, Q-020): 기한 초과 → 우선순위(HIGH 먼저) → 마감일 빠른 순(없으면 뒤) → ID 오름차순.
+# D-017(최신순)을 대체한다.
+_LIST_SQL = """
+SELECT * FROM tasks WHERE owner_id = :owner
+ORDER BY
+  (due_date IS NOT NULL AND due_date < :today AND status != 'DONE') DESC,
+  CASE priority WHEN 'HIGH' THEN 0 WHEN 'NORMAL' THEN 1 ELSE 2 END,
+  due_date IS NULL,
+  due_date,
+  id
+"""
 
 
 def owned_task_id(
@@ -37,10 +67,9 @@ def owned_task_id(
 def list_tasks(
     user: AuthUser = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)
 ) -> list[Task]:
-    rows = db.execute(
-        "SELECT * FROM tasks WHERE owner_id = ? ORDER BY created_at DESC, id DESC", (user.id,)
-    ).fetchall()
-    return [Task(**row) for row in rows]
+    today = _today()
+    rows = db.execute(_LIST_SQL, {"owner": user.id, "today": today}).fetchall()
+    return [_to_task(row, today) for row in rows]
 
 
 @router.post("", status_code=201)
@@ -52,13 +81,12 @@ def create_task(
     # 소유자는 요청으로 받지 않고 로그인 정보로만 정한다.
     now = _now()
     cur = db.execute(
-        "INSERT INTO tasks (title, description, status, created_at, updated_at, owner_id) "
-        "VALUES (?, ?, 'TODO', ?, ?, ?)",
-        (body.title, body.description, now, now, user.id),
+        "INSERT INTO tasks (title, description, status, priority, due_date, created_at, updated_at, owner_id) "
+        "VALUES (?, ?, 'TODO', ?, ?, ?, ?, ?)",
+        (body.title, body.description, body.priority, body.due_date, now, now, user.id),
     )
     db.commit()
-    row = db.execute("SELECT * FROM tasks WHERE id = ?", (cur.lastrowid,)).fetchone()
-    return Task(**row)
+    return _fetch_task(db, cur.lastrowid)
 
 
 @router.patch("/{task_id}/status")
@@ -68,13 +96,12 @@ def change_status(
     user: AuthUser = Depends(get_current_user),
     db: sqlite3.Connection = Depends(get_db),
 ) -> Task:
-    # 상태만 바꾼다. updated_at은 제목·설명 수정에서만 갱신한다.
+    # 상태만 바꾼다. updated_at은 수정 요청에서만 갱신한다 (D-021).
     db.execute(
         "UPDATE tasks SET status = ? WHERE id = ? AND owner_id = ?", (body.status, task_id, user.id)
     )
     db.commit()
-    row = db.execute("SELECT * FROM tasks WHERE id = ?", (task_id,)).fetchone()
-    return Task(**row)
+    return _fetch_task(db, task_id)
 
 
 @router.put("/{task_id}")
@@ -84,13 +111,18 @@ def update_task(
     user: AuthUser = Depends(get_current_user),
     db: sqlite3.Connection = Depends(get_db),
 ) -> Task:
+    # priority와 due_date는 보낸 것만 바꾼다. due_date가 null이면 지운다 (R-011, R-012, Q-021).
+    sets = {"title": body.title, "description": body.description, "updated_at": _now()}
+    for field in ("priority", "due_date"):
+        if field in body.model_fields_set:
+            sets[field] = getattr(body, field)
+    assignments = ", ".join(f"{col} = ?" for col in sets)
     db.execute(
-        "UPDATE tasks SET title = ?, description = ?, updated_at = ? WHERE id = ? AND owner_id = ?",
-        (body.title, body.description, _now(), task_id, user.id),
+        f"UPDATE tasks SET {assignments} WHERE id = ? AND owner_id = ?",
+        (*sets.values(), task_id, user.id),
     )
     db.commit()
-    row = db.execute("SELECT * FROM tasks WHERE id = ?", (task_id,)).fetchone()
-    return Task(**row)
+    return _fetch_task(db, task_id)
 
 
 @router.delete("/{task_id}", status_code=204)
