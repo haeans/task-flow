@@ -1,4 +1,4 @@
-import type { Status, Task, TaskInput, User } from './types'
+import type { Status, Suggestion, Task, TaskInput, User } from './types'
 
 export class ApiError extends Error {
   status: number
@@ -34,6 +34,15 @@ export function updateTask(id: number, input: TaskInput): Promise<Task> {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(input),
+  })
+}
+
+// 제목·설명으로 우선순위와 마감일을 제안받는다 (R-015). 저장하지 않는다.
+export function suggestTask(title: string, description: string): Promise<Suggestion> {
+  return request<Suggestion>('/tasks/suggest', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ title, description }),
   })
 }
 

@@ -160,6 +160,20 @@ button:disabled {
   color: var(--text-h);
 }
 
+.suggest-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.suggest-reason {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-h);
+}
+
 .date-row {
   display: flex;
   gap: 8px;
