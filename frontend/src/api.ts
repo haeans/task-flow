@@ -1,4 +1,4 @@
-import type { Status, Suggestion, Task, TaskInput, User } from './types'
+import type { Status, Suggestion, Task, TaskDraft, TaskInput, User } from './types'
 
 export class ApiError extends Error {
   status: number
@@ -44,6 +44,16 @@ export function suggestTask(title: string, description: string): Promise<Suggest
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ title, description }),
   })
+}
+
+// 제목(주제)·설명으로 할 일 초안 3~5개를 받는다 (R-016). 저장하지 않는다.
+export async function suggestDrafts(title: string, description: string): Promise<TaskDraft[]> {
+  const res = await request<{ tasks: TaskDraft[] }>('/tasks/suggestions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ title, description }),
+  })
+  return res.tasks
 }
 
 export function deleteTask(id: number): Promise<void> {

@@ -50,6 +50,16 @@ def validate_due_date(v: str | None) -> str | None:
     return v
 
 
+def validate_title(v: str) -> str:
+    """제목은 앞뒤 공백을 지우고 비어 있으면 안 되며 100자 이하이다 (D-013, D-019)."""
+    v = v.strip()
+    if not v:
+        raise ValueError("제목은 비워 둘 수 없다")
+    if len(v) > TITLE_MAX:
+        raise ValueError(f"제목은 {TITLE_MAX}자 이하여야 한다")
+    return v
+
+
 class TaskText(BaseModel):
     """제목과 설명의 입력 규칙 (D-013, D-019). 등록·수정과 AI 제안 요청이 같은 기준을 쓴다."""
 
@@ -59,12 +69,7 @@ class TaskText(BaseModel):
     @field_validator("title")
     @classmethod
     def title_required(cls, v: str) -> str:
-        v = v.strip()
-        if not v:
-            raise ValueError("제목은 비워 둘 수 없다")
-        if len(v) > TITLE_MAX:
-            raise ValueError(f"제목은 {TITLE_MAX}자 이하여야 한다")
-        return v
+        return validate_title(v)
 
     @field_validator("description")
     @classmethod
@@ -105,6 +110,34 @@ class Suggestion(BaseModel):
     @classmethod
     def due_date_format(cls, v: str | None) -> str | None:
         return validate_due_date(v)
+
+
+class TaskDraft(BaseModel):
+    """AI가 제안한 Task 초안 한 개 (R-016). 기존 등록(TaskCreate)에 그대로 넘길 수 있는 필드만 담는다.
+
+    priority 키가 없으면 NORMAL이다. 값이 있는데 허용 밖이면(null 포함) 검사에 실패한다.
+    알 수 없는 키는 무시한다.
+    """
+
+    title: str
+    priority: Priority = "NORMAL"
+    due_date: str | None = None
+
+    @field_validator("title")
+    @classmethod
+    def title_required(cls, v: str) -> str:
+        return validate_title(v)
+
+    @field_validator("due_date")
+    @classmethod
+    def due_date_format(cls, v: str | None) -> str | None:
+        return validate_due_date(v)
+
+
+class TaskDrafts(BaseModel):
+    """Task 초안 제안의 응답이자 모델이 돌려준 글을 검사하는 모양 (R-016). 초안은 3~5개이다."""
+
+    tasks: list[TaskDraft] = Field(min_length=3, max_length=5)
 
 
 class Task(BaseModel):

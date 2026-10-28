@@ -134,6 +134,15 @@ function App() {
     }
   }
 
+  // 모두 등록으로 만들어진 카드들을 보드에 넣는다. 창은 닫지 않는다 (D-033).
+  function handleCreatedMany(created: Task[]) {
+    setTasks((prev) => {
+      const have = new Set(prev.map((t) => t.id))
+      return [...created.filter((t) => !have.has(t.id)), ...prev]
+    })
+    syncOrder()
+  }
+
   function handleSaved(saved: Task) {
     setTasks((prev) =>
       prev.some((t) => t.id === saved.id)
@@ -180,6 +189,7 @@ function App() {
           task={dialog === 'new' ? undefined : dialog}
           onClose={() => setDialog(null)}
           onSaved={handleSaved}
+          onCreatedMany={handleCreatedMany}
           onNotFound={handleNotFound}
           onUnauthorized={handleUnauthorized}
         />
