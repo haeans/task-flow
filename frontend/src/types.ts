@@ -35,6 +35,13 @@ export interface TaskInput {
   due_date: string | null
 }
 
+// AI 제안 (R-015). 저장하지 않는다. 사용자가 등록·저장을 눌러야 반영된다.
+export interface Suggestion {
+  priority: Priority
+  due_date: string | null
+  reason: string
+}
+
 export const TITLE_MAX = 100
 export const DESCRIPTION_MAX = 1000
 
