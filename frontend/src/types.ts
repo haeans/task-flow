@@ -42,6 +42,13 @@ export interface Suggestion {
   reason: string
 }
 
+// AI 초안 한 개 (R-016). 저장되지 않은 미리보기이다. 항목 이름이 TaskInput과 같아 그대로 등록에 넘긴다.
+export interface TaskDraft {
+  title: string
+  priority: Priority
+  due_date: string | null
+}
+
 export const TITLE_MAX = 100
 export const DESCRIPTION_MAX = 1000
 

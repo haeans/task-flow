@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from app import suggest as ai
 from app.routes import tasks as tasks_route
-from app.schemas import SuggestRequest, Suggestion
+from app.schemas import SuggestRequest, Suggestion, TaskDrafts
 from app.security import get_current_user
 
 # AI 제안 (R-015, D-031). 제안만 돌려주고 저장하지 않는다. DB를 읽거나 쓰지 않는다.
@@ -15,5 +15,14 @@ router = APIRouter(prefix="/tasks", tags=["suggest"])
 def suggest_task(body: SuggestRequest) -> Suggestion:
     try:
         return ai.suggest(body.title, body.description, tasks_route._today())
+    except ai.SuggestError as exc:
+        raise HTTPException(status_code=exc.status_code, detail=exc.detail) from None
+
+
+# Task 초안 제안 (R-016, D-032). 같은 검사 순서이고 초안만 돌려준다. 등록은 기존 POST /tasks가 한다.
+@router.post("/suggestions", dependencies=[Depends(get_current_user)])
+def suggest_task_drafts(body: SuggestRequest) -> TaskDrafts:
+    try:
+        return ai.suggest_drafts(body.title, body.description, tasks_route._today())
     except ai.SuggestError as exc:
         raise HTTPException(status_code=exc.status_code, detail=exc.detail) from None

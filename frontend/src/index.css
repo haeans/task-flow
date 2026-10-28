@@ -168,6 +168,49 @@ button:disabled {
   font-size: 13px;
 }
 
+.draft-hint {
+  margin: 0;
+  font-size: 12px;
+}
+
+.draft-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.draft-preview h3 {
+  margin: 0;
+  font-size: 14px;
+}
+
+.draft-preview ul {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.draft-preview li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+}
+
+.draft-title {
+  color: var(--text-h);
+}
+
+.draft-meta {
+  flex-shrink: 0;
+}
+
 .suggest-reason {
   margin: 0;
   font-size: 13px;

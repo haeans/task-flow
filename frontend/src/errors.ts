@@ -15,6 +15,20 @@ export function loadErrorMessage(e: unknown): string {
   return '카드를 불러오지 못했습니다. 잠시 뒤 다시 시도하세요.'
 }
 
+// 할 일 초안 만들기(R-016)가 실패한 원인을 문구로 바꾼다. 서버 응답 내용은 담지 않는다.
+export function draftErrorMessage(e: unknown): string {
+  if (e instanceof ApiError && e.status === 503) {
+    return '지금은 AI 기능을 쓸 수 없습니다. 직접 입력해 주세요.'
+  }
+  return '할 일을 만들지 못했습니다. 다시 눌러 보세요.'
+}
+
+export const REGISTER_FAILED_NONE = '등록하지 못했습니다. 카드는 만들어지지 않았습니다.'
+
+export function registerPartialMessage(total: number, done: number): string {
+  return `${total}개 중 ${done}개를 등록했습니다. 남은 ${total - done}개는 모두 등록을 다시 눌러 주세요.`
+}
+
 // 가입·로그인이 실패한 원인을 사용자가 알 수 있는 문구로 바꾼다 (R-010).
 export function authErrorMessage(e: unknown, mode: 'login' | 'signup'): string {
   if (e instanceof TypeError || (e instanceof ApiError && [502, 503, 504].includes(e.status))) {
