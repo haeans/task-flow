@@ -61,3 +61,15 @@ export interface User {
 export const USERNAME_PATTERN = /^[A-Za-z0-9]{4,20}$/
 export const PASSWORD_MIN = 8
 export const PASSWORD_MAX = 100
+
+// AI 오늘 브리핑 (R-018). 저장하지 않는다. 제목은 서버가 주지 않으므로 id로 목록에서 찾는다.
+export interface BriefingPick {
+  id: number
+  reason: string
+}
+
+export interface Briefing {
+  top3: BriefingPick[]
+  later: number[]
+  cheer: string
+}

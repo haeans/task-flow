@@ -5,7 +5,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
 from app.db import init_db
-from app.routes import auth, suggest, tasks
+from app.routes import auth, briefing, suggest, tasks
 
 
 @asynccontextmanager
@@ -18,6 +18,7 @@ app = FastAPI(title="task-flow API", lifespan=lifespan)
 app.include_router(auth.router)
 app.include_router(tasks.router)
 app.include_router(suggest.router)
+app.include_router(briefing.router)
 
 
 @app.exception_handler(sqlite3.Error)

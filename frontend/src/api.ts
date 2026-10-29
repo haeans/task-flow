@@ -1,4 +1,4 @@
-import type { Status, Suggestion, Task, TaskDraft, TaskInput, User } from './types'
+import type { Briefing, Status, Suggestion, Task, TaskDraft, TaskInput, User } from './types'
 
 export class ApiError extends Error {
   status: number
@@ -54,6 +54,11 @@ export async function suggestDrafts(title: string, description: string): Promise
     body: JSON.stringify({ title, description }),
   })
   return res.tasks
+}
+
+// 완료가 아닌 내 할 일로 오늘의 브리핑을 받는다 (R-018). 본문이 없고 저장하지 않는다.
+export function requestBriefing(): Promise<Briefing> {
+  return request<Briefing>('/tasks/briefing', { method: 'POST' })
 }
 
 export function deleteTask(id: number): Promise<void> {

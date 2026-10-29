@@ -23,6 +23,16 @@ export function draftErrorMessage(e: unknown): string {
   return '할 일을 만들지 못했습니다. 다시 눌러 보세요.'
 }
 
+// 오늘 브리핑(R-018)이 실패한 원인을 문구로 바꾼다. 서버 응답 내용은 담지 않는다.
+export const BRIEFING_EMPTY = '오늘은 비어 있어요'
+
+export function briefingErrorMessage(e: unknown): string {
+  if (e instanceof ApiError && e.status === 503) {
+    return '지금은 브리핑을 쓸 수 없습니다'
+  }
+  return '브리핑을 받지 못했습니다'
+}
+
 export const REGISTER_FAILED_NONE = '등록하지 못했습니다. 카드는 만들어지지 않았습니다.'
 
 export function registerPartialMessage(total: number, done: number): string {

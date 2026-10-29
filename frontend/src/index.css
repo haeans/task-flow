@@ -411,3 +411,59 @@ button:disabled {
   display: flex;
   gap: 8px;
 }
+
+.briefing {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.briefing p {
+  margin: 0;
+}
+
+.briefing-card {
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.briefing-card h3 {
+  font-size: 14px;
+}
+
+.briefing-card ul {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.briefing-card li {
+  display: flex;
+  gap: 8px;
+  overflow-wrap: anywhere;
+}
+
+.briefing-no {
+  flex-shrink: 0;
+  color: var(--accent);
+}
+
+.briefing-title {
+  color: var(--text-h);
+  font-weight: 600;
+}
+
+.briefing-cheer {
+  color: var(--text-h);
+}
