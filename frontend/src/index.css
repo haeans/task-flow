@@ -471,6 +471,8 @@ button:disabled {
   .top-actions button {
     flex: 1;
   }
+}
+
 .briefing {
   display: flex;
   flex-direction: column;
@@ -525,4 +527,71 @@ button:disabled {
 
 .briefing-cheer {
   color: var(--text-h);
+}
+
+.weekplan {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.weekplan p {
+  margin: 0;
+}
+
+.weekplan-card {
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.weekplan-card h3 {
+  font-size: 14px;
+}
+
+.weekplan-days {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+}
+
+.weekplan-day {
+  display: grid;
+  grid-template-columns: 110px 1fr;
+  gap: 8px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.weekplan-day:last-child {
+  border-bottom: 0;
+}
+
+.weekplan-day dt {
+  color: var(--text-h);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.weekplan-day dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.weekplan-note {
+  color: var(--text-h);
+}
+
+/* 좁은 화면에서도 날짜와 제목은 한 줄에 둔다. 제목이 길면 제목 칸 안에서만 줄바꿈된다. */
+@media (max-width: 720px) {
+  .weekplan-day {
+    grid-template-columns: 96px 1fr;
+  }
 }
