@@ -78,8 +78,10 @@ button:disabled {
 
 .top {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
+  gap: 8px 12px;
   margin-bottom: 16px;
 }
 
@@ -88,6 +90,12 @@ button:disabled {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
   align-items: start;
+}
+
+@media (max-width: 1000px) {
+  .board {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 720px) {
@@ -219,6 +227,7 @@ button:disabled {
 
 .date-row {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
 }
 
@@ -280,6 +289,7 @@ button:disabled {
 
 .actions {
   display: flex;
+  flex-wrap: wrap;
   justify-content: flex-end;
   gap: 8px;
 }
@@ -294,6 +304,7 @@ button:disabled {
 
 .card-status {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 8px;
   margin-top: 8px;
@@ -316,6 +327,7 @@ button:disabled {
 
 .card-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   margin-top: 8px;
 }
@@ -358,6 +370,7 @@ button:disabled {
 
 .notice {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
   gap: 12px;
@@ -409,9 +422,55 @@ button:disabled {
 
 .top-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
 }
 
+@media (max-width: 720px) {
+  main {
+    padding: 12px;
+  }
+
+  h1 {
+    font-size: 24px;
+  }
+
+  button,
+  .card-status select,
+  .dialog input,
+  .dialog textarea,
+  .auth input {
+    min-height: 40px;
+  }
+
+  /* 16px 미만이면 iOS가 입력창을 누를 때 화면을 확대한다. */
+  .dialog input,
+  .dialog textarea,
+  .auth input,
+  .card-status select {
+    font-size: 16px;
+  }
+
+  .card-actions button {
+    padding: 6px 14px;
+  }
+
+  .date-row input {
+    flex: 1 1 100%;
+  }
+
+  .draft-preview li {
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .top-actions {
+    width: 100%;
+  }
+
+  .top-actions button {
+    flex: 1;
+  }
 .briefing {
   display: flex;
   flex-direction: column;
