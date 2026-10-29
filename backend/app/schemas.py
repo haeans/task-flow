@@ -159,3 +159,18 @@ class StatusUpdate(BaseModel):
 
 class TaskUpdate(TaskCreate):
     """수정은 상태를 받지 않는다. priority·due_date는 보내지 않으면 그대로이다 (model_fields_set)."""
+
+
+class BriefingPick(BaseModel):
+    """오늘 먼저 할 일 하나 (R-018). 어느 Task인지(id)와 이유."""
+
+    id: int
+    reason: str
+
+
+class Briefing(BaseModel):
+    """오늘 브리핑 응답 (R-018, D-035). 저장하지 않는다."""
+
+    top3: list[BriefingPick]
+    later: list[int]
+    cheer: str
