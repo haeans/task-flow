@@ -188,3 +188,30 @@ class WeekPlan(BaseModel):
 
     days: list[PlanDay]
     note: str
+
+
+class CommandRequest(BaseModel):
+    """한 문장으로 시키기 요청 (#33). 길이 규칙은 rules.validate_text가 검사해 이유를 문자열로 돌려준다."""
+
+    text: str
+
+
+class CommandAction(BaseModel):
+    """문장에서 읽어 낸 일 하나 (#33). 저장하지 않는다. 적용은 화면이 기존 API로 한다.
+
+    add는 title·priority·due_date(id 없음), due는 id·due_date, done은 id를 쓴다.
+    due와 done의 title은 서버가 지금 목록에서 채운다. 쓰지 않는 값은 null이다.
+    """
+
+    kind: Literal["add", "due", "done"]
+    id: int | None = None
+    title: str
+    priority: Priority | None = None
+    due_date: str | None = None
+
+
+class CommandResult(BaseModel):
+    """한 문장으로 시키기 응답 (#33). actions가 비어 있을 때만 ask가 문장이다."""
+
+    actions: list[CommandAction]
+    ask: str | None = None
