@@ -174,3 +174,17 @@ class Briefing(BaseModel):
     top3: list[BriefingPick]
     later: list[int]
     cheer: str
+
+
+class PlanDay(BaseModel):
+    """이번 주 계획의 하루 (R-019). 날짜(YYYY-MM-DD)와 그날 할 Task id."""
+
+    date: str
+    task_ids: list[int]
+
+
+class WeekPlan(BaseModel):
+    """이번 주 계획 응답 (R-019, D-037). 저장하지 않는다."""
+
+    days: list[PlanDay]
+    note: str

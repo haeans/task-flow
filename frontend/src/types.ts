@@ -73,3 +73,15 @@ export interface Briefing {
   later: number[]
   cheer: string
 }
+
+// AI 이번 주 계획 (R-019). 저장하지 않는다. 제목은 서버가 주지 않으므로 id로 목록에서 찾는다.
+export interface PlanDay {
+  // YYYY-MM-DD. 요일은 화면이 계산한다.
+  date: string
+  task_ids: number[]
+}
+
+export interface WeekPlan {
+  days: PlanDay[]
+  note: string
+}

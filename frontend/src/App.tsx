@@ -3,6 +3,7 @@ import { ApiError, changeStatus, deleteTask, listTasks, logout } from './api'
 import AuthScreen from './components/AuthScreen'
 import Board from './components/Board'
 import BriefingSection from './components/BriefingSection'
+import WeekPlanSection from './components/WeekPlanSection'
 import Notice from './components/Notice'
 import { EmptyScreen, FailedScreen, LoadingScreen } from './components/StatusScreen'
 import TaskDialog from './components/TaskDialog'
@@ -177,6 +178,7 @@ function App() {
         <>
           {tasks.length === 0 && <EmptyScreen onCreate={() => setDialog('new')} />}
           <BriefingSection tasks={tasks} onUnauthorized={handleUnauthorized} />
+          <WeekPlanSection tasks={tasks} onUnauthorized={handleUnauthorized} />
           <Board
             tasks={tasks}
             onChangeStatus={handleChangeStatus}

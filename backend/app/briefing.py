@@ -22,7 +22,7 @@ EMPTY_CHEER = "오늘은 비어 있어요"
 # overdue는 tasks._to_task와 같은 식(마감일 < 오늘, 완료 아님)으로 계산한다. 완료는 이미 뺐다.
 _BRIEFING_SQL = """
 SELECT id, title, priority, due_date,
-  (due_date IS NOT NULL AND due_date < :today) AS overdue
+  (due_date IS NOT NULL AND due_date != '' AND due_date < :today) AS overdue
 FROM tasks WHERE owner_id = :owner AND status != 'DONE'
 ORDER BY
   overdue DESC,

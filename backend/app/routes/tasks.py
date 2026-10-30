@@ -23,7 +23,8 @@ def _today() -> str:
 def _to_task(row: sqlite3.Row, today: str) -> Task:
     # 기한 초과: 마감일이 오늘보다 이전이고 완료가 아닐 때. 당일은 아니다 (R-013).
     # YYYY-MM-DD 문자열은 사전순 비교가 날짜순이다.
-    overdue = row["due_date"] is not None and row["due_date"] < today and row["status"] != "DONE"
+    # 빈 문자열은 마감일 없음이다. 문자열 비교로는 '' < 오늘이 참이라 따로 거른다.
+    overdue = bool(row["due_date"]) and row["due_date"] < today and row["status"] != "DONE"
     return Task(**dict(row), overdue=overdue)
 
 
@@ -37,7 +38,7 @@ def _fetch_task(db: sqlite3.Connection, task_id: int) -> Task:
 _LIST_SQL = """
 SELECT * FROM tasks WHERE owner_id = :owner
 ORDER BY
-  (due_date IS NOT NULL AND due_date < :today AND status != 'DONE') DESC,
+  (due_date IS NOT NULL AND due_date != '' AND due_date < :today AND status != 'DONE') DESC,
   CASE priority WHEN 'HIGH' THEN 0 WHEN 'NORMAL' THEN 1 ELSE 2 END,
   due_date IS NULL,
   due_date,

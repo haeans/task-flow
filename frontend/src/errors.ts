@@ -33,6 +33,16 @@ export function briefingErrorMessage(e: unknown): string {
   return '브리핑을 받지 못했습니다'
 }
 
+// 이번 주 계획(R-019)이 실패한 원인을 문구로 바꾼다. 서버 응답 내용은 담지 않는다.
+export const WEEKPLAN_EMPTY = '이번 주는 비어 있어요'
+
+export function weekPlanErrorMessage(e: unknown): string {
+  if (e instanceof ApiError && e.status === 503) {
+    return '지금은 계획을 쓸 수 없습니다'
+  }
+  return '계획을 받지 못했습니다'
+}
+
 export const REGISTER_FAILED_NONE = '등록하지 못했습니다. 카드는 만들어지지 않았습니다.'
 
 export function registerPartialMessage(total: number, done: number): string {
