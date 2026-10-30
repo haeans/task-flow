@@ -1,4 +1,14 @@
-import type { Briefing, Status, Suggestion, Task, TaskDraft, TaskInput, User, WeekPlan } from './types'
+import type {
+  Briefing,
+  CommandResult,
+  Status,
+  Suggestion,
+  Task,
+  TaskDraft,
+  TaskInput,
+  User,
+  WeekPlan,
+} from './types'
 
 export class ApiError extends Error {
   status: number
@@ -99,4 +109,36 @@ export function login(username: string, password: string): Promise<User> {
 
 export function logout(): Promise<void> {
   return request<void>('/sessions', { method: 'DELETE' })
+}
+
+// 422일 때 서버가 준 이유(문자열)를 담는다. 그 밖의 오류는 detail이 null이다.
+export class CommandError extends ApiError {
+  detail: string | null
+
+  constructor(status: number, detail: string | null) {
+    super(status)
+    this.detail = detail
+  }
+}
+
+// 한 문장을 actions로 바꿔 받는다 (#33). 저장하지 않는다. 422의 이유를 읽어야 해서 request()를 쓰지 않는다.
+export async function requestCommand(text: string): Promise<CommandResult> {
+  const res = await fetch('/api/tasks/command', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text }),
+  })
+  if (!res.ok) {
+    let detail: string | null = null
+    if (res.status === 422) {
+      try {
+        const body = await res.json()
+        if (typeof body?.detail === 'string') detail = body.detail
+      } catch {
+        // 본문을 읽지 못하면 이유 없이 실패로 본다.
+      }
+    }
+    throw new CommandError(res.status, detail)
+  }
+  return res.json() as Promise<CommandResult>
 }
