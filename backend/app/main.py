@@ -5,7 +5,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
 from app.db import init_db
-from app.routes import auth, briefing, suggest, tasks, weekplan
+from app.routes import auth, briefing, command, suggest, tasks, weekplan
 
 
 @asynccontextmanager
@@ -20,6 +20,7 @@ app.include_router(tasks.router)
 app.include_router(suggest.router)
 app.include_router(briefing.router)
 app.include_router(weekplan.router)
+app.include_router(command.router)
 
 
 @app.exception_handler(sqlite3.Error)

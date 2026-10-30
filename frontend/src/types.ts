@@ -85,3 +85,23 @@ export interface WeekPlan {
   days: PlanDay[]
   note: string
 }
+
+// 한 문장으로 시키기 (#33). 저장하지 않는다. 확인 카드에서 [적용]을 눌러야 기존 API로 반영된다.
+// add는 title·priority·due_date(id 없음), due는 id·due_date, done은 id를 쓰고 쓰지 않는 값은 null이다.
+export type CommandKind = 'add' | 'due' | 'done'
+
+export interface CommandAction {
+  kind: CommandKind
+  id: number | null
+  title: string
+  priority: Priority | null
+  due_date: string | null
+}
+
+// actions가 비어 있을 때만 ask가 문장이다.
+export interface CommandResult {
+  actions: CommandAction[]
+  ask: string | null
+}
+
+export const COMMAND_TEXT_MAX = 200
