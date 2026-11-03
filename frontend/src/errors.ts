@@ -64,3 +64,6 @@ export function authErrorMessage(e: unknown, mode: 'login' | 'signup'): string {
     ? '로그인하지 못했습니다. 잠시 뒤 다시 시도하세요.'
     : '가입하지 못했습니다. 잠시 뒤 다시 시도하세요.'
 }
+
+// AI가 만든 내용(제안 결과, 초안 미리보기)에 붙이는 안내. 저장 전의 내용이라는 뜻이다.
+export const AI_DRAFT_NOTICE = '초안 — AI 가 만든 내용입니다'
