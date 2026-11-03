@@ -1,5 +1,4 @@
-import sqlite3
-
+import psycopg
 from fastapi import APIRouter, Depends, HTTPException
 
 from app import command as ai
@@ -20,7 +19,7 @@ router = APIRouter(prefix="/tasks", tags=["command"])
 def command(
     body: CommandRequest,
     user: AuthUser = Depends(get_current_user),
-    db: sqlite3.Connection = Depends(get_db),
+    db: psycopg.Connection = Depends(get_db),
 ) -> CommandResult:
     try:
         text = validate_text(body.text)

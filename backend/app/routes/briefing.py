@@ -1,5 +1,4 @@
-import sqlite3
-
+import psycopg
 from fastapi import APIRouter, Depends, HTTPException
 
 from app import briefing as ai
@@ -17,7 +16,7 @@ router = APIRouter(prefix="/tasks", tags=["briefing"])
 # POST /tasks/briefing은 /tasks/{task_id}(PUT, PATCH, DELETE)와 메서드가 달라 가려지지 않는다.
 @router.post("/briefing")
 def briefing(
-    user: AuthUser = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)
+    user: AuthUser = Depends(get_current_user), db: psycopg.Connection = Depends(get_db)
 ) -> Briefing:
     try:
         return ai.brief(db, user.id, tasks_route._today())

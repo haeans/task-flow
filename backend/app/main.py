@@ -1,4 +1,4 @@
-import sqlite3
+import psycopg
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
@@ -23,8 +23,8 @@ app.include_router(weekplan.router)
 app.include_router(command.router)
 
 
-@app.exception_handler(sqlite3.Error)
-def storage_error(request: Request, exc: sqlite3.Error) -> JSONResponse:
+@app.exception_handler(psycopg.Error)
+def storage_error(request: Request, exc: psycopg.Error) -> JSONResponse:
     return JSONResponse(status_code=500, content={"detail": "저장소 오류"})
 
 

@@ -7,7 +7,8 @@
 """
 
 import json
-import sqlite3
+
+import psycopg
 
 from app.briefing import call_model, fetch_tasks
 from app.rules import DEFAULT_ASK, clean_actions, clean_ask
@@ -93,7 +94,7 @@ def parse_command(raw: str, tasks: list[dict]) -> CommandResult:
     return CommandResult(actions=[], ask=ask or DEFAULT_ASK)
 
 
-def command(db: sqlite3.Connection, owner_id: int, text: str, today: str) -> CommandResult:
+def command(db: psycopg.Connection, owner_id: int, text: str, today: str) -> CommandResult:
     tasks = fetch_tasks(db, owner_id, today)
     # 할 일이 0개여도 add를 할 수 있으므로 모델을 부른다 (오늘 브리핑과 다르다).
     raw = call_model(SYSTEM_PROMPT, render_user_message(text, tasks, today), MAX_TOKENS)
