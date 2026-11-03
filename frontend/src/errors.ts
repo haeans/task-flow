@@ -2,10 +2,8 @@ import { ApiError } from './api'
 
 // 목록을 불러오지 못한 원인을 사용자가 알 수 있는 문구로 바꾼다 (R-009).
 export function loadErrorMessage(e: unknown): string {
-  // 네트워크 오류, 또는 프록시가 백엔드에 닿지 못한 경우(502/503/504)
-  const unreachable =
-    e instanceof TypeError ||
-    (e instanceof ApiError && [502, 503, 504].includes(e.status))
+  // 서버에 닿지 못했거나(status 0), 프록시가 백엔드에 닿지 못한 경우(502/503/504)
+  const unreachable = e instanceof ApiError && [0, 502, 503, 504].includes(e.status)
   if (unreachable) {
     return 'API에 연결할 수 없습니다. 백엔드가 실행 중인지 확인한 뒤 다시 시도하세요.'
   }
@@ -51,7 +49,7 @@ export function registerPartialMessage(total: number, done: number): string {
 
 // 가입·로그인이 실패한 원인을 사용자가 알 수 있는 문구로 바꾼다 (R-010).
 export function authErrorMessage(e: unknown, mode: 'login' | 'signup'): string {
-  if (e instanceof TypeError || (e instanceof ApiError && [502, 503, 504].includes(e.status))) {
+  if (e instanceof ApiError && [0, 502, 503, 504].includes(e.status)) {
     return 'API에 연결할 수 없습니다. 백엔드가 실행 중인지 확인한 뒤 다시 시도하세요.'
   }
   if (e instanceof ApiError) {

@@ -10,18 +10,46 @@ import type {
   WeekPlan,
 } from './types'
 
+export const NETWORK_ERROR = '서버에 연결하지 못했습니다.'
+
+// 서버가 준 오류. status 0은 서버에 닿지 못한 경우이다.
+// detail은 서버가 문장으로 준 이유이다. 422 입력 오류처럼 문장이 아니면 null이다.
 export class ApiError extends Error {
   status: number
+  detail: string | null
 
-  constructor(status: number) {
-    super(`요청 실패 (${status})`)
+  constructor(status: number, detail: string | null = null, message?: string) {
+    super(message ?? detail ?? `요청 실패 (${status})`)
     this.status = status
+    this.detail = detail
   }
 }
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`/api${path}`, init)
-  if (!res.ok) throw new ApiError(res.status)
+// 401(로그인하지 않았거나 로그인이 끝남)이면 부르는 자리이다. 로그인 화면으로 돌리는 일은 App이 등록한다.
+let onUnauthorized: (() => void) | null = null
+
+export function setUnauthorizedHandler(handler: (() => void) | null): void {
+  onUnauthorized = handler
+}
+
+async function request<T>(path: string, init?: RequestInit, notifyUnauthorized = true): Promise<T> {
+  let res: Response
+  try {
+    res = await fetch(`/api${path}`, init)
+  } catch {
+    throw new ApiError(0, null, NETWORK_ERROR)
+  }
+  if (!res.ok) {
+    let detail: string | null = null
+    try {
+      const body = await res.json()
+      if (typeof body?.detail === 'string') detail = body.detail
+    } catch {
+      // 본문을 읽지 못하면 상태 코드만 담는다.
+    }
+    if (res.status === 401 && notifyUnauthorized) onUnauthorized?.()
+    throw new ApiError(res.status, detail)
+  }
   if (res.status === 204) return undefined as T
   return res.json() as Promise<T>
 }
@@ -100,45 +128,27 @@ export function signup(username: string, password: string): Promise<User> {
 
 // 로그인 상태는 서버가 내려 주는 쿠키(HttpOnly)가 들고 있다. 화면은 값을 다루지 않는다.
 export function login(username: string, password: string): Promise<User> {
-  return request<User>('/sessions', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username, password }),
-  })
+  // 비밀번호가 틀려도 401이므로 로그인 화면으로 돌리는 자리는 부르지 않는다.
+  return request<User>(
+    '/sessions',
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password }),
+    },
+    false,
+  )
 }
 
 export function logout(): Promise<void> {
   return request<void>('/sessions', { method: 'DELETE' })
 }
 
-// 422일 때 서버가 준 이유(문자열)를 담는다. 그 밖의 오류는 detail이 null이다.
-export class CommandError extends ApiError {
-  detail: string | null
-
-  constructor(status: number, detail: string | null) {
-    super(status)
-    this.detail = detail
-  }
-}
-
-// 한 문장을 actions로 바꿔 받는다 (#33). 저장하지 않는다. 422의 이유를 읽어야 해서 request()를 쓰지 않는다.
-export async function requestCommand(text: string): Promise<CommandResult> {
-  const res = await fetch('/api/tasks/command', {
+// 한 문장을 actions로 바꿔 받는다 (#33). 저장하지 않는다. 422의 이유는 ApiError.detail에 담긴다.
+export function requestCommand(text: string): Promise<CommandResult> {
+  return request<CommandResult>('/tasks/command', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ text }),
   })
-  if (!res.ok) {
-    let detail: string | null = null
-    if (res.status === 422) {
-      try {
-        const body = await res.json()
-        if (typeof body?.detail === 'string') detail = body.detail
-      } catch {
-        // 본문을 읽지 못하면 이유 없이 실패로 본다.
-      }
-    }
-    throw new CommandError(res.status, detail)
-  }
-  return res.json() as Promise<CommandResult>
 }

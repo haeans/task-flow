@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { ApiError, changeStatus, deleteTask, listTasks, logout } from './api'
+import { ApiError, changeStatus, deleteTask, listTasks, logout, setUnauthorizedHandler } from './api'
 import AuthScreen from './components/AuthScreen'
 import Board from './components/Board'
 import BriefingSection from './components/BriefingSection'
@@ -92,6 +92,13 @@ function App() {
         if (e instanceof ApiError && e.status === 401) handleUnauthorized()
       })
   }
+
+  // 처음 불러올 때의 401은 로그인 전이라 안내 없이 로그인 화면이다. 그 뒤의 401은 api.ts가 알려 준다.
+  useEffect(() => {
+    if (load !== 'ready') return
+    setUnauthorizedHandler(handleUnauthorized)
+    return () => setUnauthorizedHandler(null)
+  }, [load])
 
   function handleNotFound() {
     setDialog(null)
