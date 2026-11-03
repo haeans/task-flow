@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ApiError, changeStatus, deleteTask, listTasks, logout, setUnauthorizedHandler } from '../api'
 import Board from '../components/Board'
@@ -28,6 +28,8 @@ export default function BoardPage() {
   // 'new'는 등록 창, Task는 그 카드의 수정 창, null은 닫힘.
   const [dialog, setDialog] = useState<Task | 'new' | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
+  // 상태를 저장하는 중인 카드의 id (D-039)
+  const pendingStatus = useRef(new Set<number>())
 
   // 카드 요청이 401이면 로그인이 끝난 것이다. 로그인 화면으로 보내면 이 화면의 카드는 사라진다.
   const handleUnauthorized = useCallback(() => {
@@ -72,9 +74,14 @@ export default function BoardPage() {
     reload()
   }
 
-  // 성공 응답을 받은 뒤에만 화면에 반영한다 (AQ-001).
+  // 상태 변경은 화면에 먼저 반영하고 저장 API를 부른다. 실패하면 그 카드만 이전 값으로 되돌린다 (D-039).
+  // 저장 중인 카드는 다시 바꾸지 않는다. 선택 메뉴와 드래그가 같은 함수를 쓴다.
   async function handleChangeStatus(id: number, status: Status) {
+    const before = tasks.find((t) => t.id === id)
+    if (!before || before.status === status || pendingStatus.current.has(id)) return
     setNotice(null)
+    pendingStatus.current.add(id)
+    setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, status } : t)))
     try {
       const updated = await changeStatus(id, status)
       setTasks((prev) => prev.map((t) => (t.id === id ? updated : t)))
@@ -85,8 +92,11 @@ export default function BoardPage() {
       } else if (e instanceof ApiError && e.status === 404) {
         handleNotFound()
       } else {
+        setTasks((prev) => prev.map((t) => (t.id === id ? before : t)))
         setNotice('상태를 바꾸지 못했습니다. 카드의 상태는 그대로입니다.')
       }
+    } finally {
+      pendingStatus.current.delete(id)
     }
   }
 
