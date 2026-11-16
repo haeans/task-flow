@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { ApiError, changeStatus, CommandError, createTask, requestCommand, updateTask } from './api'
+import { ApiError, changeStatus, createTask, requestCommand, updateTask } from './api'
 import type { CommandAction, Task } from './types'
 
 export const COMMAND_OFF = '지금은 시킬 수 없습니다'
@@ -12,7 +12,7 @@ function applyPartialMessage(total: number, done: number): string {
 
 // 요청이 실패한 원인을 문구로 바꾼다. 422는 서버가 준 이유 그대로, 그 밖의 서버 응답 내용은 담지 않는다.
 function commandErrorMessage(e: unknown): string {
-  if (e instanceof CommandError && e.status === 422 && e.detail) return e.detail
+  if (e instanceof ApiError && e.status === 422 && e.detail) return e.detail
   if (e instanceof ApiError && e.status === 503) return COMMAND_OFF
   return COMMAND_FAILED
 }

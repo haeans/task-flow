@@ -1,5 +1,4 @@
-import sqlite3
-
+import psycopg
 from fastapi import APIRouter, Depends, HTTPException
 
 from app import weekplan as ai
@@ -16,7 +15,7 @@ router = APIRouter(prefix="/tasks", tags=["weekplan"])
 # POST /tasks/weekplan은 /tasks/{task_id}(PUT, PATCH, DELETE)와 메서드가 달라 가려지지 않는다.
 @router.post("/weekplan")
 def weekplan(
-    user: AuthUser = Depends(get_current_user), db: sqlite3.Connection = Depends(get_db)
+    user: AuthUser = Depends(get_current_user), db: psycopg.Connection = Depends(get_db)
 ) -> WeekPlan:
     try:
         return ai.plan(db, user.id, tasks_route._today())

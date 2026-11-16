@@ -1,3 +1,4 @@
+import { AI_DRAFT_NOTICE } from '../errors'
 import type { TaskDraft } from '../types'
 import { PRIORITIES } from '../types'
 
@@ -15,6 +16,7 @@ export default function DraftPreview({ drafts, busy, progress, onRegisterAll, on
   return (
     <section className="draft-preview" aria-label="AI가 만든 할 일 미리보기">
       <h3>AI가 만든 할 일 {drafts.length}개</h3>
+      <p className="hint">{AI_DRAFT_NOTICE}</p>
       <ul>
         {drafts.map((d, i) => (
           <li key={i}>

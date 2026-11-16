@@ -6,13 +6,13 @@ API는 마감일을 YYYY-MM-DD로만 받지만 DB의 due_date 칸에는 검사 �
 """
 
 import json
-import sqlite3
 
 import pytest
 
 from app import suggest as ai
 from app.routes import tasks as tasks_route
 from tests.test_suggest import FakeClient, reply
+from tests.conftest import raw_db
 
 TODAY = "2026-10-27"
 
@@ -28,10 +28,9 @@ def add_with_raw_due_date(c, db_file, raw) -> int:
     res = c.post("/tasks", json={"title": "카드"})
     assert res.status_code == 201
     tid = res.json()["id"]
-    conn = sqlite3.connect(db_file)
+    conn = raw_db(db_file)
     try:
-        conn.execute("UPDATE tasks SET due_date = ? WHERE id = ?", (raw, tid))
-        conn.commit()
+        conn.execute("UPDATE tasks SET due_date = %s WHERE id = %s", (raw, tid))
     finally:
         conn.close()
     return tid

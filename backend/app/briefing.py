@@ -6,7 +6,8 @@
 """
 
 import json
-import sqlite3
+
+import psycopg
 
 from app.schemas import Briefing, BriefingPick
 from app.suggest import FAILED, SuggestError, _ask_model, _load_json_object
@@ -22,15 +23,15 @@ EMPTY_CHEER = "오늘은 비어 있어요"
 # overdue는 tasks._to_task와 같은 식(마감일 < 오늘, 완료 아님)으로 계산한다. 완료는 이미 뺐다.
 _BRIEFING_SQL = """
 SELECT id, title, priority, due_date,
-  (due_date IS NOT NULL AND due_date != '' AND due_date < :today) AS overdue
-FROM tasks WHERE owner_id = :owner AND status != 'DONE'
+  (due_date IS NOT NULL AND due_date != '' AND due_date < %(today)s) AS overdue
+FROM tasks WHERE owner_id = %(owner)s AND status != 'DONE'
 ORDER BY
   overdue DESC,
   CASE priority WHEN 'HIGH' THEN 0 WHEN 'NORMAL' THEN 1 ELSE 2 END,
   due_date IS NULL,
   due_date,
   id
-LIMIT :limit
+LIMIT %(limit)s
 """
 
 SYSTEM_PROMPT = """너는 개인용 할 일 관리 앱 "task-flow"의 오늘 브리핑 도우미다.
@@ -76,7 +77,7 @@ USER_TEMPLATE = """<today>{today}</today>
 위 할 일로 오늘 브리핑을 JSON 객체 하나로만 답해 주세요."""
 
 
-def fetch_tasks(db: sqlite3.Connection, owner_id: int, today: str) -> list[dict]:
+def fetch_tasks(db: psycopg.Connection, owner_id: int, today: str) -> list[dict]:
     """로그인한 사용자의 완료가 아닌 Task를 정렬 순서대로 30개까지 모은다. 설명은 읽지도 않는다."""
     rows = db.execute(_BRIEFING_SQL, {"owner": owner_id, "today": today, "limit": TASK_LIMIT}).fetchall()
     return [
@@ -146,7 +147,7 @@ def parse_briefing(text: str, sent_ids: set[int]) -> Briefing:
     return Briefing(top3=picks, later=later, cheer=cheer)
 
 
-def brief(db: sqlite3.Connection, owner_id: int, today: str) -> Briefing:
+def brief(db: psycopg.Connection, owner_id: int, today: str) -> Briefing:
     tasks = fetch_tasks(db, owner_id, today)
     if not tasks:
         # 보낼 Task가 없으면 모델을 부르지 않으므로 키 확인도 하지 않는다 (D-035).

@@ -1,38 +1,66 @@
+import logging
 import os
-import sqlite3
 from collections.abc import Iterator
-from pathlib import Path
 
-# 저장소 파일 위치 (AQ-003 확정). 테스트에서는 환경 변수 TASK_FLOW_DB로 바꾼다.
-DEFAULT_DB_PATH = Path(__file__).resolve().parent.parent / "data" / "tasks.db"
+import psycopg
+from psycopg.rows import dict_row
+
+from app import config  # noqa: F401  backend/.env를 읽어 둔다 (DATABASE_URL)
+
+log = logging.getLogger(__name__)
+
+# 테이블은 backend/supabase/schema.sql이 만든다. 앱은 만들지 않고 열이 있는지만 확인한다.
+EXPECTED_COLUMNS = {
+    "users": {"id", "username", "password_hash"},
+    "sessions": {"id", "user_id", "created_at"},
+    "tasks": {
+        "id", "title", "description", "status", "created_at", "updated_at",
+        "owner_id", "priority", "due_date",
+    },
+}
 
 
-def db_path() -> Path:
-    return Path(os.environ.get("TASK_FLOW_DB", DEFAULT_DB_PATH))
+def database_url() -> str:
+    # 기본값을 두지 않는다. 없으면 연결할 때 오류가 난다.
+    return os.environ.get("DATABASE_URL", "")
 
 
-def connect() -> sqlite3.Connection:
-    # 스키마는 만들지 않는다. 테이블은 alembic(`alembic upgrade head`)이 만든다.
-    db_path().parent.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(db_path())
-    try:
-        conn.row_factory = sqlite3.Row
-        conn.execute("PRAGMA foreign_keys = ON")
-    except sqlite3.Error:
-        conn.close()
-        raise
-    return conn
+def connect() -> psycopg.Connection:
+    # autocommit: 문장마다 바로 반영한다. 여러 문장을 묶을 곳은 with conn.transaction()을 쓴다.
+    # prepare_threshold=None: Supabase 연결 풀러(transaction 모드)에서도 쓸 수 있게 한다.
+    return psycopg.connect(
+        database_url(), row_factory=dict_row, autocommit=True, prepare_threshold=None
+    )
+
+
+def missing_columns(conn: psycopg.Connection) -> list[str]:
+    rows = conn.execute(
+        "SELECT table_name, column_name FROM information_schema.columns "
+        "WHERE table_schema = 'public' AND table_name = ANY(%s)",
+        (list(EXPECTED_COLUMNS),),
+    ).fetchall()
+    have = {(r["table_name"], r["column_name"]) for r in rows}
+    return [
+        f"{table}.{column}"
+        for table, columns in EXPECTED_COLUMNS.items()
+        for column in sorted(columns)
+        if (table, column) not in have
+    ]
 
 
 def init_db() -> None:
     try:
-        connect().close()
-    except (sqlite3.Error, OSError):
-        # 파일을 읽을 수 없어도 앱은 뜬다. 요청이 오면 오류로 응답한다 (AQ-002).
-        pass
+        with connect() as conn:
+            missing = missing_columns(conn)
+    except psycopg.Error as exc:
+        # 연결하지 못해도 앱은 뜬다. 요청이 오면 오류로 응답한다 (AQ-002). 주소는 남기지 않는다.
+        log.warning("DB에 연결하지 못했습니다: %s", type(exc).__name__)
+        return
+    if missing:
+        log.warning("schema.sql을 적용하세요. 없는 열: %s", ", ".join(missing))
 
 
-def get_db() -> Iterator[sqlite3.Connection]:
+def get_db() -> Iterator[psycopg.Connection]:
     conn = connect()
     try:
         yield conn

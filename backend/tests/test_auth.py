@@ -1,4 +1,3 @@
-import sqlite3
 from datetime import timedelta
 
 import pytest
@@ -7,6 +6,7 @@ from fastapi import Depends
 from app import security
 from app.main import app
 from app.security import AuthUser, get_current_user
+from tests.conftest import raw_db
 
 PASSWORD = "password123"
 
@@ -32,7 +32,7 @@ def login(client, username="alice1", password=PASSWORD):
 
 
 def _all_text(db_file) -> str:
-    with sqlite3.connect(db_file) as c:
+    with raw_db(db_file) as c:
         return c.execute("SELECT password_hash FROM users").fetchone()[0]
 
 
@@ -65,7 +65,7 @@ def test_signup_stores_argon2_hash_not_plain_password(client, db_file):
 def test_signup_duplicate_username_is_409(client, db_file):
     assert signup(client).status_code == 201
     assert signup(client, password="another-pass1").status_code == 409
-    with sqlite3.connect(db_file) as c:
+    with raw_db(db_file) as c:
         assert c.execute("SELECT COUNT(*) FROM users").fetchone()[0] == 1
 
 
@@ -132,8 +132,8 @@ def test_cookie_holds_signed_session_id_stored_in_sessions(client, db_file):
     session_id = security.unsign(value)
     assert session_id is not None
     assert len(session_id) >= 43  # 32바이트의 urlsafe 표현
-    with sqlite3.connect(db_file) as c:
-        assert c.execute("SELECT COUNT(*) FROM sessions WHERE id = ?", (session_id,)).fetchone()[0] == 1
+    with raw_db(db_file) as c:
+        assert c.execute("SELECT COUNT(*) FROM sessions WHERE id = %s", (session_id,)).fetchone()[0] == 1
 
 
 def test_login_failure_is_401_with_same_message_for_both_causes(client):
@@ -154,7 +154,7 @@ def test_login_while_logged_in_issues_new_session(client, db_file):
     second = client.cookies.get(security.COOKIE_NAME)
     assert first != second
     assert client.get("/_probe").status_code == 200
-    with sqlite3.connect(db_file) as c:
+    with raw_db(db_file) as c:
         assert c.execute("SELECT COUNT(*) FROM sessions").fetchone()[0] == 2
 
 
@@ -173,7 +173,7 @@ def test_logout_is_204_and_ends_session(client, db_file):
     login(client)
     cookie = client.cookies.get(security.COOKIE_NAME)
     assert client.delete("/sessions").status_code == 204
-    with sqlite3.connect(db_file) as c:
+    with raw_db(db_file) as c:
         assert c.execute("SELECT COUNT(*) FROM sessions").fetchone()[0] == 0
     # 같은 세션 번호를 다시 보내도 401 (M2)
     client.cookies.set(security.COOKIE_NAME, cookie)
@@ -218,7 +218,7 @@ def test_session_expires_after_86400_seconds(client, db_file, monkeypatch):
     monkeypatch.setattr(security, "now", lambda: start + timedelta(seconds=86401))
     assert client.get("/_probe").status_code == 401
     # 끝난 세션의 행은 조회될 때 지운다.
-    with sqlite3.connect(db_file) as c:
+    with raw_db(db_file) as c:
         assert c.execute("SELECT COUNT(*) FROM sessions").fetchone()[0] == 0
 
 

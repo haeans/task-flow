@@ -7,8 +7,9 @@
 
 import json
 import re
-import sqlite3
 from datetime import date, timedelta
+
+import psycopg
 
 from app.briefing import fetch_tasks
 from app.schemas import PlanDay, WeekPlan
@@ -147,7 +148,7 @@ def parse_weekplan(text: str, sent_ids: set[int], today: str) -> WeekPlan:
     return WeekPlan(days=[PlanDay(date=d, task_ids=merged[d]) for d in sorted(merged)], note=note)
 
 
-def plan(db: sqlite3.Connection, owner_id: int, today: str) -> WeekPlan:
+def plan(db: psycopg.Connection, owner_id: int, today: str) -> WeekPlan:
     tasks = fetch_tasks(db, owner_id, today)
     if not tasks:
         # 보낼 Task가 없으면 모델을 부르지 않으므로 키 확인도 하지 않는다 (D-037).

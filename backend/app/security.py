@@ -1,10 +1,10 @@
 import hashlib
 import hmac
 import secrets
-import sqlite3
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 
+import psycopg
 from fastapi import Depends, HTTPException, Request
 from pwdlib import PasswordHash
 
@@ -68,21 +68,20 @@ def _unauthorized() -> HTTPException:
     return HTTPException(status_code=401, detail="로그인이 필요하다")
 
 
-def get_current_user(request: Request, db: sqlite3.Connection = Depends(get_db)) -> AuthUser:
+def get_current_user(request: Request, db: psycopg.Connection = Depends(get_db)) -> AuthUser:
     """로그인 확인. 쿠키가 없거나 서명이 맞지 않거나 세션이 없거나 끝났으면 401."""
     session_id = unsign(request.cookies.get(COOKIE_NAME))
     if session_id is None:
         raise _unauthorized()
     row = db.execute(
         "SELECT s.created_at, u.id AS user_id, u.username "
-        "FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.id = ?",
+        "FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.id = %s",
         (session_id,),
     ).fetchone()
     if row is None:
         raise _unauthorized()
     # 만든 시각부터 86400초가 지나면 끝난 세션이다. 끝난 행은 조회될 때 지운다.
     if now() >= datetime.fromisoformat(row["created_at"]) + timedelta(seconds=SESSION_SECONDS):
-        db.execute("DELETE FROM sessions WHERE id = ?", (session_id,))
-        db.commit()
+        db.execute("DELETE FROM sessions WHERE id = %s", (session_id,))
         raise _unauthorized()
     return AuthUser(id=row["user_id"], username=row["username"], session_id=session_id)

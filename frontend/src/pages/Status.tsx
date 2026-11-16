@@ -1,4 +1,6 @@
-// 화면 상태 표시: 불러오는 중, 카드 없음, 실패 (R-009).
+// 화면 상태 표시: 불러오는 중, 카드 없음, 실패 (R-009). 로그인하지 않음(B-5)은 로그인 화면으로 보낸다.
+
+export const SESSION_ENDED_NOTICE = '로그인이 끝났습니다. 다시 로그인하세요.'
 
 export function LoadingScreen() {
   return (

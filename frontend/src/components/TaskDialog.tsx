@@ -1,6 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import { ApiError, createTask, suggestDrafts, suggestTask, updateTask } from '../api'
-import { REGISTER_FAILED_NONE, draftErrorMessage, registerPartialMessage } from '../errors'
+import {
+  AI_DRAFT_NOTICE,
+  REGISTER_FAILED_NONE,
+  draftErrorMessage,
+  registerPartialMessage,
+} from '../errors'
 import type { Priority, Task, TaskDraft } from '../types'
 import { DESCRIPTION_MAX, PRIORITIES, TITLE_MAX } from '../types'
 import { validateTaskInput } from '../validate'
@@ -279,7 +284,13 @@ export default function TaskDialog({
             </button>
           </span>
         </label>
-        {reason && <p className="suggest-reason">AI 제안 이유: {reason}</p>}
+        {reason && (
+          <p className="suggest-reason">
+            {AI_DRAFT_NOTICE}
+            <br />
+            AI 제안 이유: {reason}
+          </p>
+        )}
         {error && (
           <p role="alert" className="error">
             {error}

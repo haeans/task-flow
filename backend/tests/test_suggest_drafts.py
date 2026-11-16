@@ -5,7 +5,6 @@
 """
 
 import json
-import sqlite3
 from datetime import timedelta
 
 import anthropic
@@ -18,6 +17,7 @@ from app.main import app
 from app.routes import tasks as tasks_route
 from tests.conftest import sign_in
 from tests.test_suggest import REQ, FakeClient, Response, reply, status_error
+from tests.conftest import raw_db
 
 TODAY = "2026-10-27"
 FAKE_KEY = "test-key-not-real"
@@ -371,7 +371,7 @@ def test_placeholders_in_user_text_are_not_substituted_again(client, model):
 
 
 def _rows(db_file):
-    with sqlite3.connect(db_file) as c:
+    with raw_db(db_file) as c:
         return {t: c.execute(f"SELECT * FROM {t}").fetchall() for t in ("tasks", "users")}
 
 

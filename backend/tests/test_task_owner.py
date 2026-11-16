@@ -1,10 +1,10 @@
-import sqlite3
 
 import pytest
 from fastapi.testclient import TestClient
 
 from app.main import app
 from tests.conftest import sign_in
+from tests.conftest import raw_db
 
 PROTECTED = [
     ("GET", "/tasks", None),
@@ -29,7 +29,7 @@ def _titles(c):
 
 
 def _db_rows(db_file):
-    with sqlite3.connect(db_file) as c:
+    with raw_db(db_file) as c:
         return c.execute("SELECT id, title, description, status, owner_id FROM tasks").fetchall()
 
 
@@ -73,7 +73,7 @@ def test_card_stays_owned_after_logout_and_login(two_users):
 
 def test_cards_before_login_feature_are_invisible(db_file, client):
     # 로그인 도입 전에 있던 카드(owner_id 없음)는 어느 사용자에게도 보이지 않는다 (D-028, S-56).
-    with sqlite3.connect(db_file) as c:
+    with raw_db(db_file) as c:
         c.execute(
             "INSERT INTO tasks (title, status, created_at, updated_at) VALUES ('옛 카드', 'TODO', 't', 't')"
         )
@@ -93,7 +93,7 @@ def test_create_ignores_owner_in_request(two_users, db_file):
     assert res.status_code == 201
     assert _titles(a) == ["A의 카드"]
     assert _titles(b) == []
-    with sqlite3.connect(db_file) as c:
+    with raw_db(db_file) as c:
         owner = c.execute("SELECT owner_id FROM tasks").fetchone()[0]
         a_id = c.execute("SELECT id FROM users WHERE username = 'usera01'").fetchone()[0]
     assert owner == a_id

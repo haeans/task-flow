@@ -2,7 +2,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.main import app
-from tests.conftest import sign_in, upgrade_db
+from tests.conftest import sign_in
 
 
 @pytest.fixture
@@ -80,10 +80,14 @@ def test_data_survives_restart(db_file):
             assert [t["title"] for t in c2.get("/tasks").json()] == ["남아야 함"]
 
 
-def test_unreadable_storage_returns_error(db_file):
+# 저장소에 닿을 수 없는 상태를 만든다. 원인을 풀면 서버를 다시 시작하지 않아도 정상으로 돌아온다.
+UNREACHABLE = "postgresql://nobody@127.0.0.1:1/none?connect_timeout=2"
+
+
+def test_unreadable_storage_returns_error(db_file, monkeypatch):
     with TestClient(app, raise_server_exceptions=False) as c:
         sign_in(c)
-        db_file.write_bytes(b"this is not a sqlite database" * 50)
+        monkeypatch.setenv("DATABASE_URL", UNREACHABLE)
         res = c.get("/tasks")
     assert res.status_code == 500
 
@@ -192,23 +196,20 @@ def test_delete_missing_card_is_404(client):
     assert client.delete(f"/tasks/{task['id']}").status_code == 404
 
 
-def test_create_on_unreadable_storage_fails_without_success(db_file):
+def test_create_on_unreadable_storage_fails_without_success(db_file, monkeypatch):
     with TestClient(app, raise_server_exceptions=False) as c:
         sign_in(c)
-        db_file.write_bytes(b"this is not a sqlite database" * 50)
+        monkeypatch.setenv("DATABASE_URL", UNREACHABLE)
         res = c.post("/tasks", json={"title": "저장되면 안 됨"})
     assert res.status_code == 500
 
 
-def test_recovers_after_storage_is_fixed_without_restart(db_file):
+def test_recovers_after_storage_is_fixed_without_restart(db_file, monkeypatch):
     with TestClient(app, raise_server_exceptions=False) as c:
         sign_in(c)
-        db_file.write_bytes(b"this is not a sqlite database" * 50)
+        monkeypatch.setenv("DATABASE_URL", UNREACHABLE)
         assert c.get("/tasks").status_code == 500
-        db_file.unlink()  # 원인이 풀린다 (테스트용 임시 폴더의 파일)
-        upgrade_db()  # 스키마는 alembic이 만든다. 서버 재시작은 필요 없다.
-        # 새 저장소에는 예전 로그인 정보가 없으므로 다시 가입·로그인해야 한다.
-        assert c.get("/tasks").status_code == 401
-        sign_in(c)
+        monkeypatch.setenv("DATABASE_URL", db_file)  # 원인이 풀린다. 서버 재시작은 필요 없다.
+        # 로그인 정보는 같은 DB에 남아 있으므로 다시 로그인하지 않아도 된다.
         assert c.get("/tasks").json() == []
         assert c.post("/tasks", json={"title": "복구 뒤 등록"}).status_code == 201

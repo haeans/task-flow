@@ -4,7 +4,6 @@
 """
 
 import json
-import sqlite3
 
 import anthropic
 import pytest
@@ -15,6 +14,7 @@ from app.main import app
 from app.routes import tasks as tasks_route
 from tests.conftest import sign_in
 from tests.test_suggest import REQ, FakeClient, Response, reply, status_error
+from tests.conftest import raw_db
 
 TODAY = "2026-10-27"
 WEEK = ["2026-10-27", "2026-10-28", "2026-10-29", "2026-10-30", "2026-10-31", "2026-11-01", "2026-11-02"]
@@ -69,7 +69,7 @@ def sent(fake) -> tuple[str, list[dict]]:
 
 
 def rows(db_file) -> list:
-    conn = sqlite3.connect(db_file)
+    conn = raw_db(db_file)
     try:
         return conn.execute("SELECT * FROM tasks ORDER BY id").fetchall()
     finally:
